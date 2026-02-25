@@ -4,7 +4,7 @@
 
 **Claude Code Skill for AI Image Generation**
 
-通过 [ikun API](https://api.ikuncode.cc) 调用 Gemini 3 Pro Image Preview 模型
+通过 [ikuncode API](https://api.ikuncode.cc) 调用 Gemini 3 Pro Image Preview 模型
 在对话中一句话生成高质量图片
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://python.org)
@@ -13,7 +13,7 @@
 
 <br>
 
-<img src="https://i.mij.rip/2026/02/13/89608547b83c501429c0b258de08257b.jpeg" width="600" alt="IKunImage 示例生成">
+<img src="https://i.mij.rip/2026/02/13/89608547b83c501429c0b258de08257b.jpeg" width="360" alt="IKunImage 示例生成">
 
 </div>
 
