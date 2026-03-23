@@ -89,10 +89,18 @@ python ~/.claude/skills/ikunimage/scripts/generate_ikun.py \
 **图生图**
 
 ```bash
+单图编辑
 python ~/.claude/skills/ikunimage/scripts/generate_ikun_edit.py \
   -i ./photo.jpg \
   -p "将背景改为雪景，保持人物不变" \
   -ar 3:4 -o ./edited.png
+
+双图编辑
+python ~/.claude/skills/ikunimage/scripts/generate_ikun_edit.py
+-i ./person.jpg
+-i2 ./background.jpg
+-p “将人物融入背景场景”
+-ar 3:4 -o ./merged.png
 ```
 
 **批量生成**
@@ -133,6 +141,7 @@ python ~/.claude/skills/ikunimage/scripts/generate_ikun.py --batch tasks.json --
 | `--setup` | | 交互式配置 API Key | — |
 | `--api-key` | | 指定 API Key | 配置文件 |
 | `--input` | `-i` | 输入图片路径 | **必填** |
+| `--input2` | `-i2` | 第二张输入图片路径 | — |
 | `--prompt` | `-p` | 编辑描述 | **必填** |
 | `--aspect-ratio` | `-ar` | 输出宽高比 | `1:1` |
 | `--output` | `-o` | 输出路径 | `output.png` |

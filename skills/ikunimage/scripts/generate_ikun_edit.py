@@ -188,23 +188,25 @@ def read_image_as_base64(image_path: str) -> tuple[str, str]:
 
 def build_edit_payload(
     prompt: str,
-    image_b64: str,
-    mime_type: str,
+    images: list[tuple[str, str]],
     aspect_ratio: str,
 ) -> dict:
-    """构建图生图请求 payload。"""
+    """构建图生图请求 payload（支持 1~2 张输入图）。"""
+    parts = [{"text": prompt}]
+    for image_b64, mime_type in images:
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": mime_type,
+                    "data": image_b64,
+                }
+            }
+        )
+
     return {
         "contents": [
             {
-                "parts": [
-                    {"text": prompt},
-                    {
-                        "inline_data": {
-                            "mime_type": mime_type,
-                            "data": image_b64,
-                        }
-                    },
-                ]
+                "parts": parts
             }
         ],
         "generationConfig": {
@@ -242,6 +244,7 @@ def _edit_core(
     output_path: str = "output.png",
     max_retries: int = 3,
     task_label: str = "",
+    input_image2: str | None = None,
 ) -> dict:
     """编辑单张图片，返回结果字典。线程安全，不会调用 sys.exit。
 
@@ -251,14 +254,21 @@ def _edit_core(
     """
     tag = f"[ikunimage 编辑{' ' + task_label if task_label else ''}]"
 
-    # 读取输入图片
+    # 读取输入图片（支持 1~2 张）
+    images: list[tuple[str, str]] = []
     try:
         image_b64, mime_type = read_image_as_base64(input_image)
-        _safe_print(f"{tag} 输入图片: {input_image} ({mime_type})")
+        images.append((image_b64, mime_type))
+        _safe_print(f"{tag} 输入图片#1: {input_image} ({mime_type})")
+
+        if input_image2:
+            image_b64_2, mime_type_2 = read_image_as_base64(input_image2)
+            images.append((image_b64_2, mime_type_2))
+            _safe_print(f"{tag} 输入图片#2: {input_image2} ({mime_type_2})")
     except (FileNotFoundError, ValueError) as e:
         return {"success": False, "error": str(e)}
 
-    payload = build_edit_payload(prompt, image_b64, mime_type, aspect_ratio)
+    payload = build_edit_payload(prompt, images, aspect_ratio)
 
     _safe_print(f"{tag} 正在编辑图片...")
     _safe_print(f"{tag}   编辑描述: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
@@ -355,6 +365,7 @@ def edit(
     aspect_ratio: str = "1:1",
     output_path: str = "output.png",
     max_retries: int = 3,
+    input_image2: str | None = None,
 ) -> str:
     """单张编辑入口，失败时 sys.exit(1)。"""
     result = _edit_core(
@@ -364,6 +375,7 @@ def edit(
         aspect_ratio=aspect_ratio,
         output_path=output_path,
         max_retries=max_retries,
+        input_image2=input_image2,
     )
     if not result["success"]:
         print(f"错误: {result['error']}", file=sys.stderr)
@@ -386,7 +398,8 @@ def edit_batch(
     参数:
         tasks: 任务列表，每个元素为 dict:
             {
-                "input": str,            # 必填，输入图片路径
+                "input": str,            # 必填，输入图片路径 #1
+                "input2": str,           # 可选，输入图片路径 #2
                 "prompt": str,           # 必填，编辑描述
                 "aspect_ratio": str,     # 可选，默认 "1:1"
                 "output": str,           # 必填，输出路径
@@ -418,6 +431,7 @@ def edit_batch(
             output_path=task["output"],
             max_retries=max_retries,
             task_label=f"#{index + 1}",
+            input_image2=task.get("input2"),
         )
         result["index"] = index
         return index, result
@@ -468,6 +482,10 @@ def main():
         help="输入图片路径（单图模式，必填）",
     )
     parser.add_argument(
+        "--input2", "-i2", default=None,
+        help="第二张输入图片路径（单图模式，可选）",
+    )
+    parser.add_argument(
         "--prompt", "-p", default=None,
         help="编辑描述提示词（单图模式，必填）",
     )
@@ -505,8 +523,8 @@ def main():
         return
 
     # 互斥检查
-    if args.batch and (args.input or args.prompt):
-        parser.error("--batch 和 --input/--prompt 不能同时使用")
+    if args.batch and (args.input or args.input2 or args.prompt):
+        parser.error("--batch 和 --input/--input2/--prompt 不能同时使用")
     if not args.batch and (not args.input or not args.prompt):
         parser.error("单图模式必须同时指定 --input 和 --prompt，或使用 --batch 批量模式")
 
@@ -556,6 +574,7 @@ def main():
             aspect_ratio=args.aspect_ratio,
             output_path=args.output,
             max_retries=args.retry,
+            input_image2=args.input2,
         )
 
 
